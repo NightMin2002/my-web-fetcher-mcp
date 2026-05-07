@@ -166,58 +166,108 @@ class BrowserManager {
         options: {
             timeout?: number;
             scrollCount?: number;
+            disableMedia?: boolean;  // 屏蔽图片/CSS/字体/媒体，加速文本抓取
+            retries?: number;        // 失败重试次数，默认 2
         } = {}
     ): Promise<Page> {
         touchActivity();
 
-        const ctx = await this.getContext();
-        const page = await ctx.newPage();
-        const timeout = options.timeout || DEFAULT_TIMEOUT;
+        const maxRetries = options.retries ?? 2;
+        let lastError: Error | null = null;
 
-        // 域名限速
-        await domainThrottle(url);
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            if (attempt > 0) {
+                const backoff = 1000 * Math.pow(2, attempt - 1); // 1s, 2s
+                console.error(`[browser] 第 ${attempt}/${maxRetries} 次重试，等待 ${backoff}ms...`);
+                await sleep(backoff);
+            }
 
-        // 导航 — 用 load 而非 domcontentloaded，给重定向更多时间
-        try {
-            await page.goto(url, {
-                waitUntil: "load",
-                timeout,
-            });
-        } catch (err: any) {
-            // 超时不一定是致命的
-            const isTimeout = err.message?.includes("Timeout") || err.message?.includes("timeout");
-            if (isTimeout) {
-                console.error("[browser] 页面加载超时，尝试继续提取");
-            } else {
-                await page.close();
-                throw err;
+            const ctx = await this.getContext();
+            const page = await ctx.newPage();
+            const timeout = options.timeout || DEFAULT_TIMEOUT;
+            const shouldBlockMedia = options.disableMedia !== false; // 默认开启
+
+            try {
+                // 资源屏蔽 — 文本抓取时拦截不必要的请求
+                if (shouldBlockMedia) {
+                    await page.route("**/*", (route) => {
+                        const type = route.request().resourceType();
+                        if (["image", "stylesheet", "font", "media"].includes(type)) {
+                            return route.abort();
+                        }
+                        return route.fallback(); // 交给上层路由（GBK 编码修复）
+                    });
+                }
+
+                // 域名限速
+                await domainThrottle(url);
+
+                // 导航
+                await page.goto(url, {
+                    waitUntil: "load",
+                    timeout,
+                });
+
+                // 等待重定向链完成
+                await this.waitForNavigationSettle(page, 3000);
+
+                // 等待网络空闲（最多再等 5 秒）
+                try {
+                    await page.waitForLoadState("networkidle", { timeout: 5000 });
+                } catch {
+                    // 超时不致命
+                }
+
+                // 反爬随机延迟
+                await randomDelay();
+
+                // 等待 DOM 稳定
+                await this.waitForDOMStable(page, 3000);
+
+                // 滚动触发懒加载
+                if (options.scrollCount && options.scrollCount > 0) {
+                    await this.scrollPage(page, options.scrollCount);
+                }
+
+                touchActivity();
+                return page;
+            } catch (err: any) {
+                lastError = err;
+                await page.close().catch(() => { });
+
+                // 超时错误不重试 — 说明页面本身有问题
+                const isTimeout = err.message?.includes("Timeout") || err.message?.includes("timeout");
+                if (isTimeout) {
+                    // 超时也创建一个新页面尝试提取已有内容
+                    console.error("[browser] 页面加载超时，尝试提取已有内容");
+                    const retryPage = await ctx.newPage();
+                    if (shouldBlockMedia) {
+                        await retryPage.route("**/*", (route) => {
+                            const type = route.request().resourceType();
+                            if (["image", "stylesheet", "font", "media"].includes(type)) {
+                                return route.abort();
+                            }
+                            return route.fallback();
+                        });
+                    }
+                    try {
+                        await retryPage.goto(url, { waitUntil: "domcontentloaded", timeout });
+                        await this.waitForNavigationSettle(retryPage, 2000);
+                        touchActivity();
+                        return retryPage;
+                    } catch {
+                        await retryPage.close().catch(() => { });
+                        throw err; // 彻底失败
+                    }
+                }
+
+                // 其他网络错误 — 重试
+                console.error(`[browser] 导航失败 (attempt ${attempt + 1}): ${err.message}`);
+                if (attempt >= maxRetries) throw err;
             }
         }
 
-        // 等待重定向链完成 — 给页面额外 2 秒稳定窗口
-        // 这解决了知乎等站点多次跳转导致 execution context destroyed 的问题
-        await this.waitForNavigationSettle(page, 3000);
-
-        // 等待网络空闲（最多再等 5 秒）
-        try {
-            await page.waitForLoadState("networkidle", { timeout: 5000 });
-        } catch {
-            // 超时不致命
-        }
-
-        // 反爬随机延迟
-        await randomDelay();
-
-        // 等待 DOM 稳定
-        await this.waitForDOMStable(page, 3000);
-
-        // 滚动触发懒加载
-        if (options.scrollCount && options.scrollCount > 0) {
-            await this.scrollPage(page, options.scrollCount);
-        }
-
-        touchActivity();
-        return page;
+        throw lastError || new Error("导航失败");
     }
 
     /**

@@ -45,6 +45,7 @@ export function registerScreenshot(server: McpServer): void {
             try {
                 page = await browserManager.navigateTo(url, {
                     scrollCount: scrollCount || 0,
+                    disableMedia: false, // 截图需要保留图片/CSS
                 });
 
                 // 调整视口宽度
