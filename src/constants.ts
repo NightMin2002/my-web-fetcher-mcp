@@ -3,8 +3,12 @@ import os from "os";
 
 // ========== 跨平台路径 ==========
 
-/** 浏览器用户数据目录 — 跨平台自动检测 */
+/** 浏览器用户数据目录 — 优先读取环境变量，否则跨平台自动检测 */
 function getProfileDir(): string {
+    // 支持自定义目录（解决 C 盘空间不足或迁移场景）
+    if (process.env.MCP_PROFILE_DIR) {
+        return process.env.MCP_PROFILE_DIR;
+    }
     switch (process.platform) {
         case "win32":
             return path.join(os.homedir(), "AppData", "Local", "my-web-fetcher-profile");
