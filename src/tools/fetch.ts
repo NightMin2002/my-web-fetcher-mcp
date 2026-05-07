@@ -8,7 +8,8 @@ export function registerFetch(server: McpServer): void {
         "web_fetch",
         "抓取网页正文内容，返回 Markdown 格式。支持需要登录的站点（需先用 web_login 登录）。" +
         "支持三种输出模式：full(完整内容), compact(精简8000字), summary(概要3000字)。" +
-        "对于 SPA 站点（B站、知乎等），可设置 scrollCount 触发懒加载。",
+        "对于 SPA 站点（B站、知乎等），可设置 scrollCount 触发懒加载。" +
+        "可传入 sessionId 从已有会话页面提取内容（配合 web_interact 使用）。",
         {
             url: z
                 .string()
@@ -28,41 +29,46 @@ export function registerFetch(server: McpServer): void {
                 .number()
                 .optional()
                 .describe("页面加载超时(ms)，默认 30000"),
+            sessionId: z
+                .string()
+                .optional()
+                .describe("页面会话 ID。传入已有 sessionId 可从已有页面提取内容，不传则新开页面"),
         },
-        async ({ url, outputMode, scrollCount, timeout }) => {
+        async ({ url, outputMode, scrollCount, timeout, sessionId }) => {
             const start = Date.now();
             const mode = outputMode || "full";
-
             let page;
+            let fromSession = false;
+
             try {
-                page = await browserManager.navigateTo(url, {
-                    scrollCount: scrollCount || 0,
-                    timeout: timeout || undefined,
-                });
+                if (sessionId) {
+                    const session = browserManager.sessions.get(sessionId);
+                    if (session) {
+                        page = session.page;
+                        fromSession = true;
+                    }
+                }
+
+                if (!page) {
+                    page = await browserManager.navigateTo(url, {
+                        scrollCount: scrollCount || 0,
+                        timeout: timeout || undefined,
+                    });
+                }
 
                 const finalUrl = page.url();
                 const html = await page.content();
                 const { title, content } = extractContent(html, url);
 
-                // 重定向检测
                 const redirectWarning = browserManager.getRedirectInfo(url, finalUrl);
-
-                // SPA 空壳检测
                 const spaWarning = browserManager.detectSPAIssue(content, finalUrl);
-
-                // 格式化输出
                 const formatted = formatOutput(content, mode);
 
                 const elapsed = ((Date.now() - start) / 1000).toFixed(1);
                 let resultText = `# ${title}\n\nURL: ${finalUrl}\n\n${formatted}`;
 
-                if (redirectWarning) {
-                    resultText += `\n\n${redirectWarning}`;
-                }
-                if (spaWarning) {
-                    resultText += `\n\n${spaWarning}`;
-                }
-
+                if (redirectWarning) resultText += `\n\n${redirectWarning}`;
+                if (spaWarning) resultText += `\n\n${spaWarning}`;
                 resultText += `\n\n---\n耗时 ${elapsed}s | 模式: ${mode} | 原文 ${content.length} 字`;
 
                 return {
@@ -77,7 +83,10 @@ export function registerFetch(server: McpServer): void {
                     isError: true,
                 };
             } finally {
-                if (page) await page.close().catch(() => { });
+                // 只有非会话页面才关闭
+                if (page && !fromSession) {
+                    await page.close().catch(() => { });
+                }
             }
         }
     );

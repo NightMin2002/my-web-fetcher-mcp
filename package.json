@@ -1,6 +1,6 @@
 {
   "name": "my-web-fetcher-mcp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "MCP Server - 使用 Playwright 浏览器抓取网页内容，支持登录态保持",
   "type": "module",
   "main": "dist/index.js",

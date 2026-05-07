@@ -11,7 +11,8 @@ export function registerScreenshot(server: McpServer): void {
         "web_screenshot",
         "对网页进行截图。支持完整页面截图或可视区域截图。" +
         "支持三种质量: hd(1920px高清), default(1280px标准), fast(1024px快速)。" +
-        "截图保存为临时文件返回路径，或内联返回 base64。",
+        "支持 JPEG(体积小) 和 PNG(文字清晰) 两种格式。" +
+        "可通过 selector 指定截取特定元素。截图保存为临时文件返回路径，或内联返回 base64。",
         {
             url: z
                 .string()
@@ -20,6 +21,10 @@ export function registerScreenshot(server: McpServer): void {
                 .enum(["hd", "default", "fast"])
                 .optional()
                 .describe("截图质量: hd=高清, default=标准, fast=快速低质。默认 default"),
+            format: z
+                .enum(["jpeg", "png"])
+                .optional()
+                .describe("截图格式: jpeg=体积小, png=文字清晰。默认 jpeg"),
             fullPage: z
                 .boolean()
                 .optional()
@@ -35,40 +40,50 @@ export function registerScreenshot(server: McpServer): void {
                 .max(10)
                 .optional()
                 .describe("截图前的滚动次数，用于加载懒加载内容。默认 0"),
+            selector: z
+                .string()
+                .optional()
+                .describe("CSS 选择器，截取指定元素而非整个页面"),
         },
-        async ({ url, quality, fullPage, saveToFile, scrollCount }) => {
+        async ({ url, quality, format, fullPage, saveToFile, scrollCount, selector }) => {
             const start = Date.now();
             const preset = QUALITY_PRESETS[(quality || "default") as ImageQuality];
-            const save = saveToFile !== false; // 默认 true
+            const save = saveToFile !== false;
+            const imgFormat = format || "jpeg";
 
             let page;
             try {
                 page = await browserManager.navigateTo(url, {
                     scrollCount: scrollCount || 0,
-                    disableMedia: false, // 截图需要保留图片/CSS
+                    disableMedia: false,
                 });
 
-                // 调整视口宽度
-                await page.setViewportSize({
-                    width: preset.viewportWidth,
-                    height: 900,
-                });
-
-                // 等待一下让布局调整
+                await page.setViewportSize({ width: preset.viewportWidth, height: 900 });
                 await new Promise((r) => setTimeout(r, 500));
 
-                const screenshotBuffer = await page.screenshot({
-                    type: "jpeg",
-                    quality: preset.jpegQuality,
+                const screenshotOptions: any = {
+                    type: imgFormat,
                     fullPage: fullPage || false,
-                });
+                };
+                if (imgFormat === "jpeg") {
+                    screenshotOptions.quality = preset.jpegQuality;
+                }
+
+                let screenshotBuffer: Buffer;
+                if (selector) {
+                    const element = await page.$(selector);
+                    if (!element) throw new Error(`找不到元素: ${selector}`);
+                    screenshotBuffer = await element.screenshot(screenshotOptions);
+                } else {
+                    screenshotBuffer = await page.screenshot(screenshotOptions);
+                }
 
                 const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+                const ext = imgFormat === "png" ? "png" : "jpg";
 
                 if (save) {
-                    // 保存到临时文件
                     const tmpDir = os.tmpdir();
-                    const fileName = `mcp-screenshot-${Date.now()}.jpg`;
+                    const fileName = `mcp-screenshot-${Date.now()}.${ext}`;
                     const filePath = path.join(tmpDir, fileName);
                     fs.writeFileSync(filePath, screenshotBuffer);
 
@@ -76,23 +91,16 @@ export function registerScreenshot(server: McpServer): void {
                     return {
                         content: [{
                             type: "text" as const,
-                            text: `截图已保存\n\n路径: ${filePath}\n大小: ${sizeKB}KB\n质量: ${quality || "default"}\n完整页面: ${fullPage || false}\n耗时: ${elapsed}s`,
+                            text: `截图已保存\n\n路径: ${filePath}\n大小: ${sizeKB}KB\n格式: ${imgFormat}\n质量: ${quality || "default"}${selector ? `\n元素: ${selector}` : ""}\n耗时: ${elapsed}s`,
                         }],
                     };
                 } else {
-                    // 内联 base64
                     const base64 = screenshotBuffer.toString("base64");
+                    const mimeType = imgFormat === "png" ? "image/png" : "image/jpeg";
                     return {
                         content: [
-                            {
-                                type: "image" as const,
-                                data: base64,
-                                mimeType: "image/jpeg",
-                            },
-                            {
-                                type: "text" as const,
-                                text: `截图完成 | 质量: ${quality || "default"} | 耗时: ${elapsed}s`,
-                            },
+                            { type: "image" as const, data: base64, mimeType },
+                            { type: "text" as const, text: `截图完成 | 格式: ${imgFormat} | 质量: ${quality || "default"} | 耗时: ${elapsed}s` },
                         ],
                     };
                 }

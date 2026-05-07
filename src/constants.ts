@@ -1,27 +1,30 @@
 import path from "path";
 import os from "os";
 
+// ========== 跨平台路径 ==========
+
+/** 浏览器用户数据目录 — 跨平台自动检测 */
+function getProfileDir(): string {
+    switch (process.platform) {
+        case "win32":
+            return path.join(os.homedir(), "AppData", "Local", "my-web-fetcher-profile");
+        case "darwin":
+            return path.join(os.homedir(), "Library", "Application Support", "my-web-fetcher-profile");
+        default:
+            return path.join(os.homedir(), ".local", "share", "my-web-fetcher-profile");
+    }
+}
+
+export const BROWSER_PROFILE_DIR = getProfileDir();
+export const COOKIES_BACKUP_FILE = path.join(BROWSER_PROFILE_DIR, "cookies-backup.json");
+export const RECIPE_DIR = path.join(BROWSER_PROFILE_DIR, "recipes");
+
 // ========== 浏览器配置 ==========
 
-/** 浏览器用户数据目录 — 独立 profile，保存登录态 */
-export const BROWSER_PROFILE_DIR = path.join(
-    os.homedir(),
-    "AppData",
-    "Local",
-    "my-web-fetcher-profile"
-);
-
-/** Cookie 备份文件路径 */
-export const COOKIES_BACKUP_FILE = path.join(BROWSER_PROFILE_DIR, "cookies-backup.json");
-
-/** 默认 User-Agent — 模拟真实 Chrome */
 export const DEFAULT_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
-/** 默认页面加载超时(ms) */
 export const DEFAULT_TIMEOUT = 30000;
-
-/** 返回内容最大字符数 */
 export const CHARACTER_LIMIT = 50000;
 
 /** 反爬随机延迟范围(ms) */
@@ -32,21 +35,52 @@ export const ANTI_BOT_DELAY_MAX = 1200;
 export const DOMAIN_COOLDOWN = 3000;
 
 /** 浏览器空闲自动关闭时间(ms) */
-export const BROWSER_IDLE_TIMEOUT = 20 * 60 * 1000; // 20 分钟
+export const BROWSER_IDLE_TIMEOUT = 20 * 60 * 1000;
 
 /** MCP 进程空闲自动退出时间(ms) */
-export const PROCESS_IDLE_TIMEOUT = 60 * 60 * 1000; // 60 分钟
+export const PROCESS_IDLE_TIMEOUT = 60 * 60 * 1000;
+
+/** 页面会话默认过期时间(ms) */
+export const SESSION_TIMEOUT = 5 * 60 * 1000;
+
+/** Cookie 自动备份间隔(ms) */
+export const COOKIE_BACKUP_INTERVAL = 5 * 60 * 1000;
+
+// ========== 代理配置 ==========
+
+export interface ProxyConfig {
+    server: string;
+    username?: string;
+    password?: string;
+}
+
+/** 从环境变量读取代理配置 */
+export function getProxyConfig(): ProxyConfig | undefined {
+    const proxy = process.env.MCP_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    if (!proxy) return undefined;
+    try {
+        const url = new URL(proxy);
+        return {
+            server: `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`,
+            username: url.username || undefined,
+            password: url.password || undefined,
+        };
+    } catch {
+        // 非标准格式，直接作为 server 使用
+        return { server: proxy };
+    }
+}
 
 // ========== 真实浏览器 Headers ==========
 
-export const BROWSER_HEADERS = {
+export const BROWSER_HEADERS: Record<string, string> = {
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
     DNT: "1",
     "Upgrade-Insecure-Requests": "1",
 };
 
-// ========== 截图质量 ==========
+// ========== 截图配置 ==========
 
 export type ImageQuality = "hd" | "default" | "fast";
 
@@ -70,21 +104,18 @@ export const OUTPUT_MODE_LIMITS: Record<string, number> = {
 
 // ========== SPA 检测 ==========
 
-/** 已知 SPA 懒加载站点 */
 export const SPA_DOMAINS = [
     "bilibili.com", "miyoushe.com", "xiaohongshu.com",
     "douyin.com", "weibo.com", "zhihu.com",
     "taobao.com", "jd.com",
 ];
 
-/** SPA 空壳检测关键词 */
 export const SPA_SKELETON_KEYWORDS = [
     "Loading", "loading", "加载中", "正在加载",
     "页面跳转", "即将跳转", "请稍候",
     "skeleton", "placeholder",
 ];
 
-/** 空壳内容字数阈值 */
 export const SPA_SKELETON_THRESHOLD = 200;
 
 // ========== 中文页脚垃圾关键词 ==========
