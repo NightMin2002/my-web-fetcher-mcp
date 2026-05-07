@@ -7,6 +7,44 @@ import { SPA_DOMAINS } from "../constants.js";
 /** SPA 站点自动滚动次数 */
 const SPA_AUTO_SCROLL = 3;
 
+/** 缓存有效期 3 分钟 */
+const CACHE_TTL = 3 * 60 * 1000;
+/** 缓存最大条目数 */
+const CACHE_MAX = 50;
+
+interface CacheEntry {
+    title: string;
+    content: string;
+    finalUrl: string;
+    timestamp: number;
+}
+
+const pageCache = new Map<string, CacheEntry>();
+
+function getCacheKey(url: string, mode: string): string {
+    return `${url}|${mode}`;
+}
+
+function getCache(url: string, mode: string): CacheEntry | null {
+    const key = getCacheKey(url, mode);
+    const entry = pageCache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > CACHE_TTL) {
+        pageCache.delete(key);
+        return null;
+    }
+    return entry;
+}
+
+function setCache(url: string, mode: string, entry: Omit<CacheEntry, "timestamp">): void {
+    // 淘汰最旧条目
+    if (pageCache.size >= CACHE_MAX) {
+        const oldest = pageCache.keys().next().value;
+        if (oldest) pageCache.delete(oldest);
+    }
+    pageCache.set(getCacheKey(url, mode), { ...entry, timestamp: Date.now() });
+}
+
 export function registerFetch(server: McpServer): void {
     server.tool(
         "web_fetch",
@@ -44,6 +82,19 @@ export function registerFetch(server: McpServer): void {
             let page;
             let fromSession = false;
 
+            // 缓存命中（仅非会话模式）
+            if (!sessionId) {
+                const cached = getCache(url, mode);
+                if (cached) {
+                    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+                    let resultText = `# ${cached.title}\n\nURL: ${cached.finalUrl}\n\n${cached.content}`;
+                    resultText += `\n\n---\n耗时 ${elapsed}s | 模式: ${mode} | [缓存命中]`;
+                    return {
+                        content: [{ type: "text" as const, text: resultText }],
+                    };
+                }
+            }
+
             // SPA 站点自动滚动：用户未指定 scrollCount 时，已知 SPA 域名自动滚动
             let effectiveScroll = scrollCount ?? 0;
             if (scrollCount === undefined || scrollCount === null) {
@@ -77,6 +128,11 @@ export function registerFetch(server: McpServer): void {
                 const redirectWarning = browserManager.getRedirectInfo(url, finalUrl);
                 const spaWarning = browserManager.detectSPAIssue(content, finalUrl);
                 const formatted = formatOutput(content, mode);
+
+                // 写入缓存（非会话模式）
+                if (!fromSession) {
+                    setCache(url, mode, { title, content: formatted, finalUrl });
+                }
 
                 const elapsed = ((Date.now() - start) / 1000).toFixed(1);
                 let resultText = `# ${title}\n\nURL: ${finalUrl}\n\n${formatted}`;
