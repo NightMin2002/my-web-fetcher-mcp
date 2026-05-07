@@ -37,6 +37,7 @@ import { registerInteract } from "./tools/interact.js";
 import { registerEvaluate } from "./tools/evaluate.js";
 import { registerSession } from "./tools/session.js";
 import { registerRecipe } from "./tools/recipe.js";
+import { registerSearch } from "./tools/search.js";
 
 // ========== 创建 MCP Server ==========
 
@@ -54,6 +55,7 @@ registerInteract(server);
 registerEvaluate(server);
 registerSession(server);
 registerRecipe(server);
+registerSearch(server);
 
 // ========== 进程生命周期管理 ==========
 

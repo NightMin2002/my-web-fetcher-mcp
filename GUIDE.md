@@ -35,6 +35,7 @@
 | `web_fetch` | 打开网页 → 复制正文 | "帮我看看这个链接讲了什么" |
 | `web_screenshot` | 打开网页 → 截图 | "帮我截个这个网页的图" |
 | `web_login` | 打开 Chrome → 登录账号 | "帮我登录知乎" |
+| `web_search` | 打开搜索引擎搜关键词 → 整理结果 | "帮我搜一下xxx" |
 | `web_search_extract` | 打开页面 → 复制所有链接 | "帮我提取这个页面的链接" |
 | `web_interact` | 在页面上点击、输入、滚动 | "打开百度搜索xxx" |
 | `web_evaluate` | 按 F12 → 在控制台执行 JS | "在这个页面上执行一段JS" |
