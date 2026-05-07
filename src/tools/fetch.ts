@@ -1,14 +1,18 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { browserManager } from "../browser.js";
+import { browserManager, extractDomain } from "../browser.js";
 import { extractContent, formatOutput } from "../extractor.js";
+import { SPA_DOMAINS } from "../constants.js";
+
+/** SPA 站点自动滚动次数 */
+const SPA_AUTO_SCROLL = 3;
 
 export function registerFetch(server: McpServer): void {
     server.tool(
         "web_fetch",
         "抓取网页正文内容，返回 Markdown 格式。支持需要登录的站点（需先用 web_login 登录）。" +
         "支持三种输出模式：full(完整内容), compact(精简8000字), summary(概要3000字)。" +
-        "对于 SPA 站点（B站、知乎等），可设置 scrollCount 触发懒加载。" +
+        "已知 SPA 站点（B站、知乎等）会自动滚动加载，无需手动设置 scrollCount。" +
         "可传入 sessionId 从已有会话页面提取内容（配合 web_interact 使用）。",
         {
             url: z
@@ -24,7 +28,7 @@ export function registerFetch(server: McpServer): void {
                 .min(0)
                 .max(20)
                 .optional()
-                .describe("滚动次数，用于触发懒加载内容（B站/知乎等 SPA 站点）。默认 0"),
+                .describe("滚动次数，用于触发懒加载。已知 SPA 站点会自动滚动 3 次，一般无需手动设置"),
             timeout: z
                 .number()
                 .optional()
@@ -40,6 +44,16 @@ export function registerFetch(server: McpServer): void {
             let page;
             let fromSession = false;
 
+            // SPA 站点自动滚动：用户未指定 scrollCount 时，已知 SPA 域名自动滚动
+            let effectiveScroll = scrollCount ?? 0;
+            if (scrollCount === undefined || scrollCount === null) {
+                const domain = extractDomain(url);
+                if (SPA_DOMAINS.some(d => domain.includes(d))) {
+                    effectiveScroll = SPA_AUTO_SCROLL;
+                    console.error(`[fetch] 检测到 SPA 站点 ${domain}，自动滚动 ${SPA_AUTO_SCROLL} 次`);
+                }
+            }
+
             try {
                 if (sessionId) {
                     const session = browserManager.sessions.get(sessionId);
@@ -51,7 +65,7 @@ export function registerFetch(server: McpServer): void {
 
                 if (!page) {
                     page = await browserManager.navigateTo(url, {
-                        scrollCount: scrollCount || 0,
+                        scrollCount: effectiveScroll,
                         timeout: timeout || undefined,
                     });
                 }
