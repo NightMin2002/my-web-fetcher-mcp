@@ -8,18 +8,25 @@ const ENGINES: Record<string, { urlTemplate: string; extractScript: string }> = 
         urlTemplate: "https://www.google.com/search?q={{query}}&hl=zh-CN",
         extractScript: `(() => {
             const results = [];
-            // Google 搜索结果
-            document.querySelectorAll('#search .g, #rso .g').forEach(el => {
-                const titleEl = el.querySelector('h3');
-                const linkEl = el.querySelector('a[href^="http"]');
-                const snippetEl = el.querySelector('[data-sncf], .VwiC3b, .st, .IsZvec');
-                if (titleEl && linkEl) {
-                    results.push({
-                        title: titleEl.innerText.trim(),
-                        url: linkEl.href,
-                        snippet: snippetEl ? snippetEl.innerText.trim() : ''
-                    });
+            // 2025/2026 新版 Google: 用 a h3 定位结果
+            document.querySelectorAll('a h3').forEach(h3 => {
+                const link = h3.closest('a');
+                if (!link || !link.href.startsWith('http')) return;
+                // 跳过 Google 内部链接
+                if (link.href.includes('google.com/search') || link.href.includes('accounts.google.com')) return;
+                const container = h3.closest('#rso > div') || h3.closest('div[class]');
+                let snippet = '';
+                if (container) {
+                    const snipEl = container.querySelector('[data-sncf]')
+                        || container.querySelector('.VwiC3b')
+                        || container.querySelector('[style*="-webkit-line-clamp"]');
+                    if (snipEl) snippet = snipEl.innerText.trim();
                 }
+                results.push({
+                    title: h3.innerText.trim(),
+                    url: link.href,
+                    snippet: snippet.slice(0, 300)
+                });
             });
             return results;
         })()`,
