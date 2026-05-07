@@ -29,14 +29,29 @@ npm run build            # 编译 TypeScript
 
 ### MCP 配置
 
-在 MCP 配置文件中添加：
+**方式一：图形化客户端 (如 cc-switch)**
+
+在工具内添加 MCP 时，于“完整的 JSON 配置”一栏填写：
+
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": ["<项目绝对路径>/dist/index.js"]
+}
+```
+> 注：Windows 路径建议将反斜杠 `\` 改为正斜杠 `/`。
+
+**方式二：通过配置文件**
+
+在你的 IDE 或 CLI 的 MCP 配置文件中添加：
 
 ```json
 {
   "mcpServers": {
     "my-web-fetcher": {
       "command": "node",
-      "args": ["<项目路径>/dist/index.js"]
+      "args": ["<项目绝对路径>/dist/index.js"]
     }
   }
 }

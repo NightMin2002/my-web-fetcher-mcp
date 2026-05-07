@@ -13,7 +13,24 @@
 
 ## 各平台安装配置
 
-### 1. Antigravity IDE
+### 1. cc-switch (及其他可视化客户端)
+
+在添加 MCP 的图形界面中，分别填写：
+
+- **MCP 类型**：选择 `自定义` (Custom)
+- **MCP 标题**：`my-web-fetcher`
+- **完整的 JSON 配置**：
+
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": ["<绝对路径>/dist/index.js"]
+}
+```
+> **💡 提示**：如果你的系统是 Windows，填写的路径请务必使用正斜杠 `/` 或双反斜杠 `\\`（如 `D:/path/to/dist/index.js`），避免原生反斜杠转义报错。
+
+### 2. Antigravity IDE
 
 编辑 `~/.gemini/antigravity/mcp_config.json`：
 
