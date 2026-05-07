@@ -7,7 +7,8 @@ export function registerEvaluate(server: McpServer): void {
         "web_evaluate",
         "在页面中执行自定义 JavaScript 代码并返回结果。" +
         "适合用于：提取 API 数据、操作 DOM、获取运行时信息、调试页面状态。" +
-        "可配合 sessionId 在已有会话中执行。",
+        "可配合 sessionId 在已有会话中执行。" +
+        "代码中可直接使用 return 语句返回值，无需手动包裹函数。",
         {
             url: z
                 .string()
@@ -40,7 +41,15 @@ export function registerEvaluate(server: McpServer): void {
 
                 touchActivity();
 
-                const result = await page.evaluate(script);
+                // 自动包裹 IIFE：如果脚本含有顶层 return，包裹为立即执行函数
+                let wrappedScript = script;
+                const trimmed = script.trim();
+                // 非函数/箭头表达式、含 return → 需要包裹
+                if (/\breturn\b/.test(trimmed) && !trimmed.startsWith('(') && !trimmed.startsWith('function') && !trimmed.startsWith('async')) {
+                    wrappedScript = `(() => { ${script} })()`;
+                }
+
+                const result = await page.evaluate(wrappedScript);
                 const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
                 const resultStr = typeof result === "string"

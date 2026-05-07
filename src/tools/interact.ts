@@ -85,9 +85,9 @@ export function registerInteract(server: McpServer): void {
                     case "type":
                         if (!selector) throw new Error("type 操作必须提供 selector 参数");
                         if (!text) throw new Error("type 操作必须提供 text 参数");
-                        await page.fill(selector, text);
+                        await page.fill(selector, text, { timeout: 10000 });
                         if (submitAfter) {
-                            await page.press(selector, "Enter");
+                            await page.press(selector, "Enter", { timeout: 5000 });
                             await new Promise((r) => setTimeout(r, 2000));
                         }
                         break;
