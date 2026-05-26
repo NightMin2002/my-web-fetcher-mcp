@@ -1,14 +1,14 @@
 {
-  "name": "my-web-fetcher-mcp",
+  "name": "my-web-search",
   "version": "2.0.0",
-  "description": "MCP Server - 使用 Playwright 浏览器抓取网页内容，支持登录态保持",
+  "description": "MCP Server - 提供网页搜索、正文抓取、交互控制与视觉渲染的全套网页分析工具",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "clean": "rimraf dist"
+    "clean": "node -e \"fs.rmSync('dist', {recursive: true, force: true})\""
   },
   "engines": {
     "node": ">=18"
@@ -18,6 +18,7 @@
     "@mozilla/readability": "^0.6.0",
     "iconv-lite": "^0.6.3",
     "jsdom": "^25.0.0",
+    "pdf-parse": "^2.4.5",
     "playwright": "^1.49.0",
     "turndown": "^7.2.0",
     "zod": "^3.23.8"
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.10.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/turndown": "^5.0.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

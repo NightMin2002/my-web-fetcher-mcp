@@ -11,11 +11,11 @@ function getProfileDir(): string {
     }
     switch (process.platform) {
         case "win32":
-            return path.join(os.homedir(), "AppData", "Local", "my-web-fetcher-profile");
+            return path.join(os.homedir(), "AppData", "Local", "my-web-search-profile");
         case "darwin":
-            return path.join(os.homedir(), "Library", "Application Support", "my-web-fetcher-profile");
+            return path.join(os.homedir(), "Library", "Application Support", "my-web-search-profile");
         default:
-            return path.join(os.homedir(), ".local", "share", "my-web-fetcher-profile");
+            return path.join(os.homedir(), ".local", "share", "my-web-search-profile");
     }
 }
 

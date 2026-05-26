@@ -32,17 +32,19 @@ import {
 import { registerFetch } from "./tools/fetch.js";
 import { registerScreenshot } from "./tools/screenshot.js";
 import { registerLogin } from "./tools/login.js";
-import { registerLinks } from "./tools/links.js";
+import { registerSearchExtract } from "./tools/search_extract.js";
 import { registerInteract } from "./tools/interact.js";
 import { registerEvaluate } from "./tools/evaluate.js";
 import { registerSession } from "./tools/session.js";
 import { registerRecipe } from "./tools/recipe.js";
 import { registerSearch } from "./tools/search.js";
+import { registerPdf } from "./tools/pdf.js";
+import { registerAction } from "./tools/action.js";
 
 // ========== 创建 MCP Server ==========
 
 const server = new McpServer({
-    name: "my-web-fetcher-mcp",
+    name: "my-web-search",
     version: "2.0.0",
 });
 
@@ -50,12 +52,14 @@ const server = new McpServer({
 registerFetch(server);
 registerScreenshot(server);
 registerLogin(server);
-registerLinks(server);
+registerSearchExtract(server);
 registerInteract(server);
 registerEvaluate(server);
 registerSession(server);
 registerRecipe(server);
 registerSearch(server);
+registerPdf(server);
+registerAction(server);
 
 // ========== 进程生命周期管理 ==========
 
@@ -98,7 +102,7 @@ heartbeat.unref();
 // ========== 启动 ==========
 
 async function main(): Promise<void> {
-    console.error("[mcp] My Web Fetcher MCP v2.0 启动中...");
+    console.error("[mcp] My Web Search MCP v2.0 启动中...");
 
     const transport = new StdioServerTransport();
     await server.connect(transport);

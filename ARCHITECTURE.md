@@ -6,7 +6,7 @@
 
 ## 1. 项目定位
 
-**My Web Fetcher MCP** 是一个通过 [Model Context Protocol](https://modelcontextprotocol.io/) 暴露网页抓取能力的服务器。AI 助手通过 MCP 协议调用本服务的工具，实现以下目标：
+**My Web Search MCP** 是一个通过 [Model Context Protocol](https://modelcontextprotocol.io/) 暴露网页抓取能力的服务器。AI 助手通过 MCP 协议调用本服务的工具，实现以下目标：
 
 - 抓取需要登录才能访问的网页内容
 - 渲染 JavaScript 驱动的 SPA 页面
@@ -44,7 +44,7 @@ src/
     ├── fetch.ts       # web_fetch — 核心抓取工具
     ├── screenshot.ts  # web_screenshot — 截图工具
     ├── login.ts       # web_login — 有头浏览器登录
-    ├── links.ts       # web_search_extract — 链接提取
+    ├── search_extract.ts # web_search_extract — 链接提取
     └── interact.ts    # web_interact — 页面交互
 ```
 
@@ -135,8 +135,8 @@ index.ts 启动
 
 | 数据 | 存储位置 | 用途 |
 |------|---------|------|
-| 浏览器 profile（Cookie、LocalStorage 等） | `~/AppData/Local/my-web-fetcher-profile/` | 保持登录态 |
-| Cookie 备份 | `~/AppData/Local/my-web-fetcher-profile/cookies-backup.json` | 双重保险 |
+| 浏览器 profile（Cookie、LocalStorage 等） | `~/AppData/Local/my-web-search-profile/` | 保持登录态 |
+| Cookie 备份 | `~/AppData/Local/my-web-search-profile/cookies-backup.json` | 双重保险 |
 | 截图临时文件 | `%TEMP%/mcp-screenshot-*.jpg` | web_screenshot 输出 |
 
 ---
@@ -187,7 +187,7 @@ interface PlatformConfig {
 | 缓存机制 | 相同 URL 短时间内复用缓存结果，避免重复请求 | 中 |
 | Pipeline 工具 | 多步操作流水线（如"搜索 → 点击第一个结果 → 提取内容"） | 中 |
 | 跨平台 profile 路径 | 自动检测 OS 选择正确的 profile 目录 | 低 |
-| 文件转换 | Office/PDF 等本地文件转换为可读格式 | 低 |
+| File Converter | 本地文本/PDF等文件解析为纯文本格式 | 低 |
 | 视频录制 | 页面操作录屏/关键帧提取 | 低 |
 
 ---

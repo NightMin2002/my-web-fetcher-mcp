@@ -18,7 +18,7 @@
 在添加 MCP 的图形界面中，分别填写：
 
 - **MCP 类型**：选择 `自定义` (Custom)
-- **MCP 标题**：`my-web-fetcher`
+- **MCP 标题**：`my-web-search`
 - **完整的 JSON 配置**：
 
 ```json
@@ -37,7 +37,7 @@
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<绝对路径>/dist/index.js"]
     }
@@ -54,7 +54,7 @@
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<绝对路径>/dist/index.js"]
     }
@@ -65,7 +65,7 @@
 ### 3. Claude Code CLI
 
 ```bash
-claude mcp add my-web-fetcher node <绝对路径>/dist/index.js
+claude mcp add my-web-search node <绝对路径>/dist/index.js
 ```
 
 或编辑 `~/.claude/settings.json`：
@@ -73,7 +73,7 @@ claude mcp add my-web-fetcher node <绝对路径>/dist/index.js
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<绝对路径>/dist/index.js"]
     }
@@ -88,7 +88,7 @@ claude mcp add my-web-fetcher node <绝对路径>/dist/index.js
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<绝对路径>/dist/index.js"]
     }
@@ -103,7 +103,7 @@ claude mcp add my-web-fetcher node <绝对路径>/dist/index.js
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<绝对路径>/dist/index.js"]
     }

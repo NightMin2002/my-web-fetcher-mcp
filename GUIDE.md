@@ -1,6 +1,6 @@
 # 使用说明书
 
-本文档面向使用者，介绍如何在日常 AI 对话中使用 Web Fetcher MCP 的各项功能。
+本文档面向使用者，介绍如何在日常 AI 对话中使用 Web Search MCP 的各项功能。
 
 ---
 
@@ -44,8 +44,9 @@
 | `web_recipe_list` | 查看录制了哪些操作 | "列出所有配方" |
 | `web_recipe_run` | 用按键精灵回放操作 | "用百度搜索配方搜一下xxx" |
 | `web_recipe_delete` | 删除不用的录制 | "删掉那个配方" |
+| `web_pdf` | 打开 PDF → 复制文字内容 | "帮我看看这个 PDF 讲了什么" |
 
-简单来说：**AI + 这个 MCP = AI 拥有了一个真实的 Chrome 浏览器**。它能访问任何网页、执行搜索、处理登录、连续交互，跟人类上网没有区别。
+简单来说：**AI + 这个 MCP = AI 拥有了一个真实的 Chrome 浏览器**。它能访问 any 网页、执行搜索、处理登录、连续交互，跟人类上网没有区别。
 
 ---
 
@@ -150,7 +151,7 @@ AI：
 
 存储在 profile 目录下的 `recipes/` 子目录中，每个配方是一个 JSON 文件，可以直接用文本编辑器打开查看和编辑。
 
-**默认位置**：`%LocalAppData%\my-web-fetcher-profile\recipes\`
+**默认位置**：`%LocalAppData%\my-web-search-profile\recipes\`
 
 ### 对话示例
 
@@ -166,7 +167,7 @@ AI：（调用 web_recipe_save，保存配方）
 AI：（调用 web_recipe_list）
 
 你：有没有百度相关的配方？
-AI：（调用 web_recipe_list，domain="baidu.com"）
+AI：（调用 web_recipe_list, domain="baidu.com"）
 ```
 
 **使用配方**：
@@ -213,14 +214,14 @@ AI：（调用 web_recipe_delete）
 
 | 系统 | 路径 |
 |------|------|
-| Windows | `%LocalAppData%\my-web-fetcher-profile\` |
-| macOS | `~/Library/Application Support/my-web-fetcher-profile/` |
-| Linux | `~/.local/share/my-web-fetcher-profile/` |
+| Windows | `%LocalAppData%\my-web-search-profile\` |
+| macOS | `~/Library/Application Support/my-web-search-profile/` |
+| Linux | `~/.local/share/my-web-search-profile/` |
 
 ### 目录结构
 
 ```
-my-web-fetcher-profile/
+my-web-search-profile/
 ├── Default/            # Chromium 浏览器数据（Cookie、LocalStorage 等）
 ├── cookies-backup.json # Cookie 备份文件
 └── recipes/            # 站点配方
@@ -237,11 +238,11 @@ my-web-fetcher-profile/
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<项目路径>/dist/index.js"],
       "env": {
-        "MCP_PROFILE_DIR": "E:/my-web-fetcher-profile"
+        "MCP_PROFILE_DIR": "E:/my-web-search-profile"
       }
     }
   }
@@ -250,7 +251,7 @@ my-web-fetcher-profile/
 
 设置后，所有数据（Cookie、配方等）都会存储到你指定的目录。
 
-> 注意：如果你之前已经有数据在默认目录，需要手动把 `%LocalAppData%\my-web-fetcher-profile\` 整个文件夹移过去。
+> 注意：如果你之前已经有数据在默认目录，需要手动把 `%LocalAppData%\my-web-search-profile\` 整个文件夹移过去。
 
 ### 磁盘占用
 
@@ -280,7 +281,7 @@ npm run build
 
 | 需要复制的目录 | 包含什么 |
 |---------------|---------|
-| `%LocalAppData%\my-web-fetcher-profile\` | Cookie（登录态）、站点配方 |
+| `%LocalAppData%\my-web-search-profile\` | Cookie（登录态）、站点配方 |
 
 如果新电脑想放在不同位置，复制到任意目录后，设置 `MCP_PROFILE_DIR` 环境变量指向它即可。
 
@@ -305,7 +306,7 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<项目路径>/dist/index.js"],
       "env": {

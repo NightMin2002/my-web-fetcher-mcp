@@ -1,4 +1,4 @@
-# My Web Fetcher MCP
+# My Web Search MCP
 
 使用 Playwright 浏览器抓取网页内容的 MCP Server。通过 persistent context 保存登录态，支持需要登录的网站。
 
@@ -6,17 +6,19 @@
 
 | 工具 | 功能 | 关键参数 |
 |------|------|---------| 
-| `web_fetch` | 抓取网页正文 -> Markdown | `url`, `outputMode`(full/compact/summary), `scrollCount`, `sessionId` |
+| `web_fetch` | 抓取网页正文 -> Markdown（3分钟缓存） | `url`, `outputMode`(full/compact/summary), `scrollCount`, `sessionId` |
 | `web_screenshot` | 网页截图 | `url`, `quality`(hd/default/fast), `format`(jpeg/png), `fullPage`, `selector` |
 | `web_login` | 打开有头浏览器让用户登录 | `url`(可选) |
+| `web_search` | 搜索引擎搜索，返回结构化结果 | `query`, `engine`(google/baidu/bing), `count` |
 | `web_search_extract` | 提取页面所有链接 | `url`, `filter`(关键词过滤) |
 | `web_interact` | 页面交互(点击/输入/滚动/等待) | `url`, `action`, `selector`, `sessionId`, `submitAfter` |
-| `web_evaluate` | 在页面执行自定义 JavaScript | `url`, `script`, `sessionId` |
+| `web_evaluate` | 在页面执行 JS（支持直接 return） | `url`, `script`, `sessionId` |
 | `web_session` | 管理页面会话(list/close) | `action`, `sessionId` |
 | `web_recipe_save` | 保存站点操作配方 | `domain`, `name`, `steps`, `variables` |
 | `web_recipe_list` | 列出已保存的配方 | `domain`(可选过滤) |
 | `web_recipe_run` | 执行配方 | `recipeId`, `variables` |
 | `web_recipe_delete` | 删除配方 | `recipeId` |
+| `web_pdf` | 解析 PDF 提取文字（URL 或本地文件） | `source`, `outputMode` |
 
 ## 快速开始
 
@@ -55,7 +57,7 @@ npm run build            # 编译 TypeScript
 ```json
 {
   "mcpServers": {
-    "my-web-fetcher": {
+    "my-web-search": {
       "command": "node",
       "args": ["<项目绝对路径>/dist/index.js"]
     }
@@ -112,7 +114,7 @@ npm start      # 生产运行
 2. 回放配方：web_recipe_run(recipeId, variables={"query": "关键词"})
 ```
 
-配方以 JSON 文件存储在 `%LocalAppData%\my-web-fetcher-profile\recipes\` 目录中，可手动查看和编辑。
+配方以 JSON 文件存储在 `%LocalAppData%\my-web-search-profile\recipes\` 目录中，可手动查看和编辑。
 
 ### 其他核心特性
 
@@ -127,7 +129,7 @@ npm start      # 生产运行
 - **重定向保护** — 检测跨域重定向（DNS 劫持预警）
 - **Cookie 定时备份** — 每 5 分钟自动备份，不再仅依赖关闭时保存
 - **内存友好** — 浏览器空闲 20 分钟自动释放，下次调用透明重启
-- **进程安全** — stdin 断开检测 + 空闲超时双保险
+- **进程安全** — stdin断开检测 + 空闲超时双保险
 
 ## 技术文档
 
